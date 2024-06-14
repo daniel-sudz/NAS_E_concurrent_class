@@ -7,23 +7,28 @@ public:
     Foo() {
     }
 
-    void first(function<void()> printFirst) {
-        printFirst();
-        turn++;
+    void printn(function<void()>& printFunc, int n) {
+        {
+            unique_lock lk(m);
+            cv.wait(lk, [this,n](){return turn == n;});
+        }
+        printFunc();
+        {
+            unique_lock lk(m);
+            turn++;
+        }
         cv.notify_all();
+    }
+
+    void first(function<void()> printFirst) {
+        printn(printFirst,1);
     }
 
     void second(function<void()> printSecond) {
-        unique_lock lk(m);
-        cv.wait(lk, [this](){return turn == 2;});
-        printSecond();
-        turn++;
-        cv.notify_all();
+        printn(printSecond,2);
     }
 
     void third(function<void()> printThird) {
-        unique_lock lk(m);
-        cv.wait(lk, [this](){return turn == 3;});
-        printThird();
+        printn(printThird,3);
     }
 }
